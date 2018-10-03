@@ -86,8 +86,8 @@ def main():
 	for train_index, test_index in rs.split(y):
 
 		X_train = X[train_index]
-		y_train = X[train_index]
-		X_test = y[test_index]
+		y_train = y[train_index]
+		X_test = X[test_index]
 		y_test = y[test_index]
 
 		model = logisticRegression(1)
