@@ -34,19 +34,23 @@ def buildParser():
 
 	return parser
 
-class LDA1dProjection():	
+class LDA2dGaussGM():	
 	def __init__(self, X_train, y_train):
 		self.X = X_train
-		self.X1 = X_train[np.where(y_train==0)]
-		self.X2 = X_train[np.where(y_train==1)]
 		self.y = y_train
-		self.feature_num = X_train.shape[1] # number of features
-
+		self.labels = np.unique(y_train)
+		self.label_num = len(self.labels)	# number of unique labels
+		self.num = X_train.shape[0]			# number of instances
+		self.feature_num = X_train.shape[1]			# number of features
+		print("Class number: ", self.label_num)
+		print("Training data size: ", self.num, 'x', self.feature_num)
+		print()
 
 	def train(self):
-		m1 = np.mean(self.X1, axis=0).reshape(self.feature_num, 1)
-		m2 = np.mean(self.X2, axis=0).reshape(self.feature_num, 1)
-		Sw = self.covariance(self.X1, m1, self.X2, m2)
+		means = self.cal_means()
+		Sb, Sw = self.covariance(means)
+		
+		sys.exit()
 		self.w = np.dot(np.linalg.inv(Sw), (m2-m1))
 		result = np.dot(self.X, self.w)
 		return result
@@ -57,18 +61,34 @@ class LDA1dProjection():
 		return result
 
 
-	def covariance(self, X1, m1, X2, m2):
+	def covariance(self, means):
+		print("Calculating covariance...")
+		print()
+
+		Sb = np.zeros((self.feature_num, self.feature_num))
 		Sw = np.zeros((self.feature_num, self.feature_num))
-		for i in range(X1.shape[0]):
-			row = X1[i].reshape(self.feature_num,1)
-			Sw += np.dot((row-m1), (row-m1).T)
 
-		for j in range(X2.shape[0]):
-			row = X2[j].reshape(self.feature_num,1)
-			Sw += np.dot((row-m2), (row-m2).T)
+		overall_mean = np.mean(self.X, axis=0).reshape(self.feature_num,1)
+		for i in range(self.label_num):
+			n = self.X[self.y==self.labels[i]].shape[0]
+			mean = means[i].reshape(self.feature_num,1)
+			Sb += n*np.dot((mean-overall_mean), (mean-overall_mean).T)
 
-		return Sw
+		for i in range(self.label_num):
+			mean = means[i].reshape(self.feature_num,1)
+			for row in self.X[np.where(self.y==self.labels[i])]:
+				Sw += np.dot((row-mean), (row-mean).T)
 
+		return Sb, Sw
+
+
+	def cal_means(self):
+		means = np.zeros((self.label_num, self.feature_num))
+		for i in range(self.label_num):
+			temp = np.mean(self.X[np.where(self.y==self.labels[i])], axis=0).reshape(1, self.feature_num)
+			means[i] = temp
+
+		return means
 
 
 def projection_plt(train_result, y_train, test_result, y_test):
@@ -96,19 +116,13 @@ def main():
 			"ERROR: File does not exist"
 		)
 
-	data = np.genfromtxt(args.filename, delimiter=',')
+	data = np.genfromtxt(args.filename, delimiter=',', dtype=int)
 
 	X = data[:,:-1]
 	y = data[:,-1]
 
-	
-	if os.path.basename(args.filename) == 'boston.csv':
-		print('Modify the target of boston dataset...')
-		print()
-
-		median = np.median(y)
-		y = (y < median).astype(int)
-
+	print('Data size:',X.shape)
+	print()
 	
 	kfold = KFold(args.num_crossval)
 	for train_index, test_index in kfold.split(y):
@@ -118,13 +132,12 @@ def main():
 		X_test = X[test_index]
 		y_test = y[test_index]
 
-		model = LDA1dProjection(X_train, y_train)
+		model = LDA2dGaussGM(X_train, y_train)
 
 		train_result = model.train()
 		test_result = model.predict(X_test)
 
 		projection_plt(train_result, y_train, test_result, y_test)
-
 
 if __name__ == '__main__':
 	main()
