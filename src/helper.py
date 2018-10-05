@@ -45,7 +45,7 @@ class randomSplit():
 
 		for i in range(labels.size):
 			label_index = index_all[np.where(y==labels[i])]
-			temp = np.random.choice(label_index, math.floor(label_index.size * percent), replace=False)
+			temp = np.random.choice(label_index, math.ceil(label_index.size * percent), replace=False)
 			train_index = np.concatenate((train_index, temp))
 
 		test_index = np.setdiff1d(index_all, train_index, assume_unique=True)
