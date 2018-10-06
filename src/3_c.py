@@ -41,7 +41,7 @@ class LDA2dGaussGM():
 		self.labels = np.unique(y_train)
 		self.label_num = len(self.labels)	# number of unique labels
 		self.num = X_train.shape[0]			# number of instances
-		self.feature_num = X_train.shape[1]			# number of features
+		self.feature_num = X_train.shape[1]			# number of featuress
 		print("Class number: ", self.label_num)
 		print("Training data size: ", self.num, 'x', self.feature_num)
 		print()

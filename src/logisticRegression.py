@@ -47,18 +47,10 @@ def buildParser():
 
 
 class logisticRegression():	
-	def __init__(self, X_train, y_train):
-		self.X = X_train
-		self.y = y_train
-		self.labels = np.unique(y_train)
-		self.label_num = len(self.labels)		# number of unique labels
-		self.num = X_train.shape[0]				# number of instances
-		self.feature_num = X_train.shape[1]		# number of features
-		self.W = np.random.normal(0,0.001, (self.label_num, self.feature_num))
-
-		print("Class number: ", self.label_num)
-		print("Training data size: ", self.num, 'x', self.feature_num)
-		#self._train()
+	def __init__(self, max_iter=1000, delta=0.0001, tolerance=0.0001):
+		self.max_iter = max_iter
+		self.delta = delta
+		self.tolerance = tolerance
 	
 	def fit(self, X_train, y_train):
 		self.X = X_train
@@ -69,22 +61,25 @@ class logisticRegression():
 		self.feature_num = X_train.shape[1]		# number of features
 		self.w = np.random.normal(0,0.001, (self.label_num, self.feature_num))
 
+		print("Class number: ", self.label_num)
+		print("Training data size: ", self.X.shape)
+		print()
+
 		self.X=self.X+np.random.normal(0, 0.001, self.X.shape) #to prevent numerical problem
 
-		for i in range(self.label_num):
+		for k in range(self.label_num):
 
-			# y_classi[j] = 1 if belongs to labels[i] else y_classi[j] = 0
+			# y_classi[i] = 1 if belongs to labels[k] else y_classi[i] = 0
 			y_classi = np.zeros(self.y.shape, dtype = int)
-			for j in range(len(self.y)):
-				if self.y[j] == self.labels[i]:
-					y_classi[j] = 1
+			for i in range(len(self.y)):
+				if self.y[i] == self.labels[k]:
+					y_classi[i] = 1
 
-			self.w[i] = self.irls(self.X, y_classi)
+			self.w[k] = self.irls(self.X, y_classi, self.max_iter, self.delta, self.tolerance)
 
-		print(self.w.shape)
 		return self
 
-	def irls(self, X, y, max_iter=1000, delta=0.0001, tolerance=0.0001):
+	def irls(self, X, y, max_iter, delta, tolerance):
 		delta = np.array(np.repeat(delta, self.num)).reshape(1,self.num)
 		R = np.eye(self.num)
 		z = inv(R).dot(y)
@@ -111,25 +106,39 @@ class logisticRegression():
 		return w_i
 
 	def predict(self, X_test):
+		print("Test data size: ", X_test.shape)
+		y_pre = np.array([], dtype=int)
+		for i in range(X_test.shape[0]):
+			row = X_test[i]
+			likelihood = np.array([])
+			for k in range(self.label_num):
+				likelihood = np.append(likelihood, self.w[k].T.dot(row))
 
+			result = np.argmax(softmax(likelihood))
+			y_pre = np.append(y_pre, int(self.labels[result]))
 		return y_pre
 
 	def score(self, X_test, y_test):
 		y_pre = self.predict(X_test)
 
-		return score
+		result = np.array([], dtype=int)
+		num = X_test.shape[0]
+		for i in range(num):
+			result = np.append(result, y_pre[i] == y_test[i])
+
+		error = 1 - np.sum(result)/num
+
+		print("Test error rate:",error)
+		print()
+
+		return error
 
 
 
-def sigmoid(x):
-	return 1 / (1 + math.exp(-x))
-
-
-
-def softmax(y_linear):
-    exp = nd.exp(y_linear-nd.max(y_linear, axis=1).reshape((-1,1)))
-    norms = nd.sum(exp, axis=1).reshape((-1,1))
-    return exp / norms
+def softmax(x):
+	exp = np.exp(x-np.max(x))
+	norms = np.sum(exp, axis=0)
+	return exp / norms
 
 
 
@@ -143,7 +152,7 @@ def main():
 			"ERROR: File does not exist"
 		)
 
-	data = np.genfromtxt(args.filename, delimiter=',', dtype = int)
+	data = np.genfromtxt(args.filename, delimiter=',')
 
 	X = data[:,:-1]
 	y = data[:,-1]
@@ -158,20 +167,25 @@ def main():
 
 	print('Data size:', X.shape)
 	print()
-	
-	rs = randomSplit(args.num_splits,args.train_percent)
-	start = time.time()
-	for train_index, test_index in rs.split(y):
 
+	start = time.time()
+
+	error = np.ones((args.num_splits, len(args.train_percent)))
+
+	rs = randomSplit(args.num_splits,args.train_percent)
+	for train_index, test_index, i, p in rs.split(y):
 		X_train = X[train_index]
 		y_train = y[train_index]
 		X_test = X[test_index]
 		y_test = y[test_index]
 
-		model = logisticRegression(X_train,y_train).fit(X_train, y_train)
-		error = model.score(X_test, y_test)
+		model = logisticRegression().fit(X_train, y_train)
+		error[i][p] = model.score(X_test, y_test)
 
+	print('Test error mean:', np.mean(error, axis=0))
+	print('Test error std:', np.std(error, axis=0))
 	end = time.time()
-	print('Time consumed:'+str(end-start))
+	print('Time consumed:'+str(end-start)+'s')
+
 if __name__ == '__main__':
 	main()

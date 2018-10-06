@@ -63,13 +63,13 @@ class randomSplit():
 
 			y_train = y[train]
 
-			for p in self.train_percent:
-				print('Using',p,'%'+'of traning data')
+			for p in range(len(self.train_percent)):
+				print('Using',self.train_percent[p],'%'+'of traning data')
 				print()
-				
-				train_index,_ = self.generateIndex(y_train, p/100)
 
-				print('Training data size:', train_index.size)
-				print('Test data size:', test_index.size)
-				print()
-				yield train_index, test_index
+				train_index,_ = self.generateIndex(y_train, self.train_percent[p]/100)
+
+				#print('Training data size:', train_index.size)
+				#print('Test data size:', test_index.size)
+				#print()
+				yield train_index, test_index, i, p
