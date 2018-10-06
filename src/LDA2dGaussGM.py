@@ -44,6 +44,7 @@ class LDA2dGaussGM():
 		self.label_num = len(self.labels)			# number of unique labels
 		self.num = X_train.shape[0]					# number of instances
 		self.feature_num = X_train.shape[1]			# number of featuress
+		self.pro_dimension = pro_dimension			# projection dimension
 
 		print("Class number: ", self.label_num)
 		print("Training data size: ", self.num, 'x', self.feature_num)
@@ -52,7 +53,7 @@ class LDA2dGaussGM():
 	def train(self):
 		self.means = self.cal_means()
 		Sb, Sw = self.covariance(self.means)
-		eigvals, eigvecs = eigs(np.dot(np.linalg.pinv(Sw), Sb), k=2, which='LM')
+		eigvals, eigvecs = eigs(np.dot(np.linalg.pinv(Sw), Sb), k=self.pro_dimension, which='LM')
 
 		self.w = eigvecs
 		result = np.dot(self.X, self.w)
