@@ -1,6 +1,14 @@
 # CSCI5525
-
-### Run the command:
+### Packages used
+* os, sys, time, math
+* argparse
+* numpy
+* matplotlib.pyplot
+* scipy.sparse.linalg
+### Datasets
+* boston.csv: 506 x 13, 2 classes (After modification of target)
+* digits.csv: 1797 x 64, 10 classses
+### Run the command for problem 3:
 ```
 python3 LDA1dProjection.py
 	-f [/PATH/TO/FILE]
@@ -9,7 +17,10 @@ python3 LDA1dProjection.py
 python3 LDA2dGaussGM.py
 	-f [/PATH/TO/FILE]
 	-n [NUMBER OF SPLIT]
-  
+```
+
+### Run the command for problem 4:
+```
 python3 logisticRegression.py
 	-f [/PATH/TO/FILE]
 	-n [NUMBER OF SPLIT]
