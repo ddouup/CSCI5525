@@ -111,12 +111,11 @@ class naiveBayesGauss():
 
 			result = np.argmax(posterior)
 			y_pre = np.append(y_pre, int(self.labels[result]))
-			
+
 		return y_pre
 
 	def score(self, X_test, y_test):
 		y_pre = self.predict(X_test)
-		print(y_pre)
 		
 		result = np.array([], dtype=int)
 		num = X_test.shape[0]
@@ -172,10 +171,19 @@ def main():
 		model = naiveBayesGauss().fit(X_train, y_train)
 		error[i][p] = model.score(X_test, y_test)
 
-	print('Test error mean:', np.mean(error, axis=0))
-	print('Test error std:', np.std(error, axis=0))
+	err_means = np.mean(error, axis=0)
+	err_stds = np.std(error, axis=0)
+	print('Test error mean:', err_means)
+	print('Test error std:', err_stds)
 	end = time.time()
 	print('Time consumed:'+str(end-start)+'s')
+
+
+	output = np.concatenate([err_means.reshape(1, len(args.train_percent)), err_stds.reshape(1, len(args.train_percent))])
+	output_file = 'naiveBayesGauss_'+os.path.basename(args.filename)
+	print('Store test result to: ',output_file)
+	np.savetxt(output_file, output, delimiter=",")
+
 
 if __name__ == '__main__':
 	main()

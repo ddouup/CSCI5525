@@ -71,20 +71,19 @@ class LDA1dProjection():
 
 
 
-def projection_plt(train_result, y_train, test_result, y_test):
+def projection_plt(train_result, y_train, test_result, y_test, itr):
 	bins = 20
 
-	plt.subplot(1,2,1)
+	plt.subplot(5,4,2*itr-1)
 	plt.hist(train_result[np.where(y_train==0)], bins=bins, alpha=0.5)
 	plt.hist(train_result[np.where(y_train==1)], bins=bins, alpha=0.5)
-	plt.title("Training data")
+	plt.title("Training data of "+str(itr)+" split")
 
-	plt.subplot(1,2,2)
+	plt.subplot(5,4,2*itr)
 	plt.hist(test_result[np.where(y_test==0)], bins=bins, alpha=0.5)
 	plt.hist(test_result[np.where(y_test==1)], bins=bins, alpha=0.5)
-	plt.title("Test data")
-	plt.show()
-
+	plt.title("Test data of "+str(itr)+" split")
+	plt.draw()
 
 
 def main():
@@ -111,6 +110,7 @@ def main():
 
 	
 	kfold = KFold(args.num_crossval)
+	itr = 1
 	for train_index, test_index in kfold.split(y):
 
 		X_train = X[train_index]
@@ -123,8 +123,10 @@ def main():
 		train_result = model.train()
 		test_result = model.predict(X_test)
 
-		projection_plt(train_result, y_train, test_result, y_test)
+		projection_plt(train_result, y_train, test_result, y_test, itr)
+		itr += 1
 
+	plt.show()
 
 if __name__ == '__main__':
 	main()
