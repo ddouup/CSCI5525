@@ -3,7 +3,7 @@ import sys, os, math, argparse, time
 from helper import randomSplit
 
 from numpy import dot
-from numpy.linalg import inv
+from numpy.linalg import inv, pinv
 
 def buildParser():
 	parser = argparse.ArgumentParser(
@@ -65,8 +65,6 @@ class logisticRegression():
 		print("Training data size: ", self.X.shape)
 		print()
 
-		self.X=self.X+np.random.normal(0, 0.001, self.X.shape) #to prevent numerical problem
-
 		for k in range(self.label_num):
 
 			# y_classi[i] = 1 if belongs to labels[k] else y_classi[i] = 0
@@ -83,7 +81,7 @@ class logisticRegression():
 		delta = np.array(np.repeat(delta, self.num)).reshape(1,self.num)
 		R = np.eye(self.num)
 		z = inv(R).dot(y)
-		w_i = dot(inv(X.T.dot(R).dot(X)),(X.T.dot(R).dot(z)))
+		w_i = dot(pinv(X.T.dot(R).dot(X)),(X.T.dot(R).dot(z)))
 
 		itr = 0
 		while itr < max_iter:
@@ -96,7 +94,7 @@ class logisticRegression():
 			#R = np.diag(X.dot(Wi)*(1 - X.dot(Wi)).reshape(1, self.num)[0])
 
 			z = X.dot(w_old)-inv(R).dot(X.dot(w_old)-y)
-			w_i = inv(X.T.dot(R).dot(X)).dot(X.T).dot(R).dot(z)
+			w_i = pinv(X.T.dot(R).dot(X)).dot(X.T).dot(R).dot(z)
 
 			if np.sum(abs(w_i-w_old)) < tolerance:
 				break

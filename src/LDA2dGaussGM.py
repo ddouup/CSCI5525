@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import sys, os, math
 import argparse
 from helper import KFold
+from scipy.sparse.linalg import eigs
+from naiveBayesGauss import naiveBayesGauss
 
 def buildParser():
 	parser = argparse.ArgumentParser(
@@ -35,19 +37,24 @@ def buildParser():
 	return parser
 
 class LDA2dGaussGM():	
-	def __init__(self, X_train, y_train):
+	def __init__(self, X_train, y_train, pro_dimension=1):
 		self.X = X_train
-		self.X1 = X_train[np.where(y_train==0)]
-		self.X2 = X_train[np.where(y_train==1)]
 		self.y = y_train
-		self.num = X_train.shape[1] # number of features
+		self.labels = np.unique(y_train)
+		self.label_num = len(self.labels)			# number of unique labels
+		self.num = X_train.shape[0]					# number of instances
+		self.feature_num = X_train.shape[1]			# number of featuress
 
+		print("Class number: ", self.label_num)
+		print("Training data size: ", self.num, 'x', self.feature_num)
+		print()
 
 	def train(self):
-		m1 = np.mean(self.X1, axis=0).reshape(self.num, 1)
-		m2 = np.mean(self.X2, axis=0).reshape(self.num, 1)
-		Sw = self.covariance(self.X1, m1, self.X2, m2)
-		self.w = np.dot(np.linalg.inv(Sw), (m2-m1))
+		self.means = self.cal_means()
+		Sb, Sw = self.covariance(self.means)
+		eigvals, eigvecs = eigs(np.dot(np.linalg.pinv(Sw), Sb), k=2, which='LM')
+
+		self.w = eigvecs
 		result = np.dot(self.X, self.w)
 		return result
 
@@ -57,35 +64,54 @@ class LDA2dGaussGM():
 		return result
 
 
-	def covariance(self, X1, m1, X2, m2):
-		Sw = np.zeros((self.num, self.num))
-		for i in range(X1.shape[0]):
-			row = X1[i].reshape(self.num,1)
-			Sw += np.dot((row-m1), (row-m1).T)
+	def covariance(self, means):
+		print("Calculating covariance...")
+		print()
 
-		for j in range(X2.shape[0]):
-			row = X2[j].reshape(self.num,1)
-			Sw += np.dot((row-m2), (row-m2).T)
+		Sb = np.zeros((self.feature_num, self.feature_num))
+		Sw = np.zeros((self.feature_num, self.feature_num))
 
-		return Sw
+		overall_mean = np.mean(self.X, axis=0).reshape(self.feature_num,1)
+		for i in range(self.label_num):
+			n = self.X[self.y==self.labels[i]].shape[0]
+			mean = means[i].reshape(self.feature_num,1)
+			Sb += n*np.dot((mean-overall_mean), (mean-overall_mean).T)
+
+		for i in range(self.label_num):
+			mean = means[i].reshape(self.feature_num,1)
+			for row in self.X[np.where(self.y==self.labels[i])]:
+				row = row.reshape(self.feature_num,1)
+				Sw += np.dot((row-mean), (row-mean).T)
+
+		return Sb, Sw
 
 
+	def cal_means(self):
+		means = np.zeros((self.label_num, self.feature_num))
+		for i in range(self.label_num):
+			temp = np.mean(self.X[np.where(self.y==self.labels[i])], axis=0).reshape(1, self.feature_num)
+			means[i] = temp
 
-def projection_plt(train_result, y_train, test_result, y_test):
+		return means
+
+
+def projection_plt(train_result, y_train, test_result, y_test, itr):
 	bins = 20
+	labels = np.unique(y_test)
 
-	plt.subplot(1,2,1)
-	plt.hist(train_result[np.where(y_train==0)], bins=bins, alpha=0.5)
-	plt.hist(train_result[np.where(y_train==1)], bins=bins, alpha=0.5)
-	plt.title("Training data")
+	plt.subplot(5,4,2*itr-1)
+	for i in range(len(labels)):
+		result_k = train_result[np.where(y_train==i)]
+		plt.scatter(result_k[:,0], result_k[:,1])
+	plt.title("Training data of "+str(itr)+" split")
 
-	plt.subplot(1,2,2)
-	plt.hist(test_result[np.where(y_test==0)], bins=bins, alpha=0.5)
-	plt.hist(test_result[np.where(y_test==1)], bins=bins, alpha=0.5)
-	plt.title("Test data")
-	plt.show()
+	plt.subplot(5,4,2*itr)
+	for i in range(len(labels)):
+		result_k = test_result[np.where(y_test==i)]
+		plt.scatter(result_k[:,0], result_k[:,1])
+	plt.title("Test data of "+str(itr)+" split")
 
-
+	plt.draw()
 
 def main():
 	parser = buildParser()
@@ -101,7 +127,9 @@ def main():
 	X = data[:,:-1]
 	y = data[:,-1]
 
-	
+	print('Data size:',X.shape)
+	print()
+
 	if os.path.basename(args.filename) == 'boston.csv':
 		print('Modify the target of boston dataset...')
 		print()
@@ -109,8 +137,11 @@ def main():
 		median = np.median(y)
 		y = (y < median).astype(int)
 
-	
+
+	error = np.ones((args.num_crossval,1))
+
 	kfold = KFold(args.num_crossval)
+	itr = 1
 	for train_index, test_index in kfold.split(y):
 
 		X_train = X[train_index]
@@ -118,12 +149,26 @@ def main():
 		X_test = X[test_index]
 		y_test = y[test_index]
 
-		model = LDA2dGaussGM(X_train, y_train)
-
+		model = LDA2dGaussGM(X_train, y_train, pro_dimension=2)
 		train_result = model.train()
 		test_result = model.predict(X_test)
 
-		projection_plt(train_result, y_train, test_result, y_test)
+		projection_plt(train_result, y_train, test_result, y_test, itr)
+
+		model = naiveBayesGauss().fit(train_result, y_train)
+		error[itr-1] = model.score(test_result, y_test)
+
+		itr += 1
+
+
+	for i in range(args.num_crossval):
+		print('Test error of '+str(i+1)+' split:', error[i])
+
+	print('Test error mean:', np.mean(error))
+	print('Test error std:', np.std(error))
+
+	plt.show()
+
 
 if __name__ == '__main__':
 	main()

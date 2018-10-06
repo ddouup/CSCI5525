@@ -2,9 +2,6 @@ import numpy as np
 import sys, os, math, argparse, time
 from helper import randomSplit
 
-from numpy import dot
-from numpy.linalg import inv
-
 def buildParser():
 	parser = argparse.ArgumentParser(
 		prog = __file__
