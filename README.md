@@ -31,3 +31,9 @@ python3 naiveBayesGauss.py
 	-n [NUMBER OF SPLIT]
 	-t [TRAINING PERCENT] (eg. 10 25 50 75 100)
 ```
+The logisticRegression.py and naiveBayesGauss.py save the test error results to csv files of the same directory.<br><br>
+Run
+```
+python3 plot.py
+```
+to generate graph.
