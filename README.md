@@ -1,4 +1,4 @@
-# CSCI5525
+# CSCI5525_hw1
 ### Packages used
 * os, sys, time, math
 * argparse
